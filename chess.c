@@ -62,10 +62,10 @@ bishop_moves(int _x, int _y, int cursor_pos)
 }
 
 int
-black_piece(int _x, int _y)
+black_piece(enum Piece board[8][8], int _x, int _y)
 {
-    if (chessboard[_x][_y] >= BlackPawn 
-        && chessboard[_x][_y] <= BlackKing)
+    if (board[_x][_y] >= BlackPawn 
+        && board[_x][_y] <= BlackKing)
     {
         return 1;
     } else {
@@ -384,10 +384,10 @@ rook_moves(int _x, int _y, int cursor_pos)
 }
 
 int 
-white_piece(int _x, int _y)
+white_piece(enum Piece board[8][8], int _x, int _y)
 {
-    if (chessboard[_x][_y] >= WhitePawn
-        && chessboard[_x][_y] <= WhiteKing)
+    if (board[_x][_y] >= WhitePawn
+        && board[_x][_y] <= WhiteKing)
     {
         return 1;
     } else {

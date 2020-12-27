@@ -28,7 +28,7 @@ struct Move {
 };
 
 int bishop_moves(int _x, int _y, int cursor_pos);
-int black_piece(int _x, int _y);
+int black_piece(enum Piece board[8][8], int _x, int _y);
 void clear_board(enum Piece board[8][8]);
 int file_to_num(char _x);
 int king_can_move(int to_x, int to_y);
@@ -41,7 +41,7 @@ void position(char* position, int _x, int _y);
 int queen_moves(int _x, int _y);
 int rook_moves(int _x, int _y, int cursor_pos);
 void search_board(enum Piece chessboard[8][8], enum Piece piece);
-int white_piece(int _x, int _y);
+int white_piece(enum Piece board[8][8], int _x, int _y);
 
 extern struct Move black_history[1024];
 extern int can_castle;

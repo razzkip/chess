@@ -1,14 +1,13 @@
 
-TESTS=test/test_board_operations.c
+TESTS=test/*.c
 LIB_SRC=chess.c chess.h
-TEST_SRC=test/test.c test/test.h
 
-test: $(TESTS) $(TEST_SRC) $(LIB_SRC)
-	gcc $(TESTS) $(TEST_SRC) $(LIB_SRC) -I. -Itest -o test/tests
-	./test/tests
+test: $(TESTS) $(LIB_SRC)
+	gcc $(TESTS) $(LIB_SRC) -I. -Itest -o test/run_tests -g
+	./test/run_tests
 
 clean:
-	rm -f *.o *.a *.gch test/*.o test/*.gch test/tests
+	rm -f *.o *.a *.gch test/*.o test/*.gch test/run_tests
 
 .PHONY: test
 .PHONY: clean
