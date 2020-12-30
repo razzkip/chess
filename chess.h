@@ -3,50 +3,57 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "chess.h"
 
-enum File { A = 0, B, C, D, E, F, G, H };
+#define PIECE(p, c) (piece_t){ p, c }
+#define LOC(x, y) (loc_t){ x, y - 1 };
+
+typedef enum { A, B, C, D, E, F, G, H } file_idx_t;
 
 // Castling value for both x, y values in move_list
 enum NonordinaryMove { CastleKingSide = -2, CastleQueenSide = -1 };
-enum Piece { EmptySquare,
-    BlackPawn, BlackKnight, BlackBishop, BlackRook, BlackQueen, BlackKing,
-    WhitePawn, WhiteKnight, WhiteBishop, WhiteRook, WhiteQueen, WhiteKing,
-};
+typedef enum { NoPiece, Pawn, Knight, Bishop, Rook, Queen, King, } piece_e;
+typedef enum { White, Black } color_e;
 
-struct Square {
-    int x;
-    int y;
-};
+typedef struct {
+    uint8_t piece : 4;
+    uint8_t color : 1;
+} piece_t;
 
-struct Move {
-    enum Piece piece;
-    struct Square square;
-};
+typedef struct {
+    uint8_t x : 4;
+    uint8_t y : 4;
+} loc_t;
 
-int bishop_moves(int _x, int _y, int cursor_pos);
-int black_piece(enum Piece board[8][8], int _x, int _y);
-void clear_board(enum Piece board[8][8]);
-int file_to_num(char _x);
-int king_can_move(int to_x, int to_y);
-int king_moves(int _x, int _y, int cursor_pos);
-int knight_moves(int _x, int _y);
-void move(char* buf, enum Piece, int _x, int _y);
-char num_to_file(int num);
-int pawn_moves(int _x, int _y);
-void position(char* position, int _x, int _y);
-int queen_moves(int _x, int _y);
-int rook_moves(int _x, int _y, int cursor_pos);
-void search_board(enum Piece chessboard[8][8], enum Piece piece);
-int white_piece(enum Piece board[8][8], int _x, int _y);
+typedef struct {
+    piece_t piece;
+    loc_t loc;
+} mov_t;
 
-extern struct Move black_history[1024];
-extern int can_castle;
-extern enum Piece chessboard[8][8];
-extern struct Move moves[64];
-extern struct Move white_history[1024];
+extern const piece_t EmptySquare;
+
+int bishop_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y,
+        int cursor_pos);
+void clear_board(piece_t board[8][8]);
+int compare_pieces(piece_t left, piece_t right);
+int king_can_move(piece_t board[8][8], uint8_t to_x, uint8_t to_y);
+int king_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y,
+        int cursor_pos);
+int knight_moves(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y);
+void move(char* buf, piece_t piece, uint8_t _x, uint8_t _y);
+int pawn_moves(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y);
+piece_t piece(piece_t board[8][8], loc_t _loc);
+void pos_to_str(char position[3], uint8_t _x, uint8_t _y);
+int queen_moves(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y);
+int rook_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y,
+        int cursor_pos);
+void search_board(piece_t chessboard[8][8], piece_t piece);
 
 #endif /* CHESS_H */

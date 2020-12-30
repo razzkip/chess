@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     int total = sizeof(tests) / 8;
 
     for (int i = 0; i < total; i++) {
-        printf("##[ TEST %05d ]------------------------------\n", i + 1);
+        printf("\n##[ TEST %5d ]------------------------------\n", i + 1);
         int result = (*tests[i])();
         if (result) {
             printf("no errors found...\n");
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("##[ RESULTS ]---------------------------------\n");
+    printf("\n##[ RESULTS    ]------------------------------\n");
     printf("%5d PASSED (%0.4f%)\n", pass, (pass / total));
     printf("%5d TOTAL\n", total);
 

@@ -1,25 +1,23 @@
 #include "chess.h"
 
-struct Move black_history[1024];
-int can_castle = 1;
-enum Piece chessboard[8][8];
-struct Move moves[64];
-struct Move white_history[1024];
+const piece_t EmptySquare = PIECE(NoPiece, White);
 
 int
-bishop_moves(int _x, int _y, int cursor_pos)
+bishop_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y, 
+        int cursor_pos)
 {
     // up, left
     int cursor = cursor_pos;
-    for (int x = _x - 1, y = _y + 1; 
+    for (int x = _x - 1, y = _y + 1;
         x >= 0 && y < 8 && cursor < 64;
-        x--, y++) 
+        x--, y++)
     {
-        moves[cursor].square.x = x;
-        moves[cursor].square.y = y;
-        moves[cursor].piece = chessboard[_x][_y];
+        moves[cursor].piece = board[_x][_y];
+        moves[cursor].loc.x = x;
+        moves[cursor].loc.y = y;
         cursor++;
-        if (chessboard[x][y] != EmptySquare) { break; }
+        if (!compare_pieces(board[x][y], EmptySquare)) { break; }
     }
 
     // up, right
@@ -27,11 +25,11 @@ bishop_moves(int _x, int _y, int cursor_pos)
         x < 8 && y < 8 && cursor < 64;
         x++, y++)
     {
-        moves[cursor].square.x = x;
-        moves[cursor].square.y = y;
-        moves[cursor].piece = chessboard[_x][_y];
+        moves[cursor].loc.x = x;
+        moves[cursor].loc.y = y;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
-        if (chessboard[x][y] != EmptySquare) { break; }
+        if (!compare_pieces(board[x][y], EmptySquare)) { break; }
     }
 
     // down, left
@@ -39,11 +37,11 @@ bishop_moves(int _x, int _y, int cursor_pos)
         x >= 0 && y >= 0 && cursor < 64;
         x--, y--)
     {
-        moves[cursor].square.x = x;
-        moves[cursor].square.y = y;
-        moves[cursor].piece = chessboard[_x][_y];
+        moves[cursor].loc.x = x;
+        moves[cursor].loc.y = y;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
-        if (chessboard[x][y] != EmptySquare) { break; }
+        if (!compare_pieces(board[x][y], EmptySquare)) { break; }
     }
 
     // down, right
@@ -51,30 +49,18 @@ bishop_moves(int _x, int _y, int cursor_pos)
         x < 8 && y >= 0 && cursor < 64;
         x++, y--)
     {
-        moves[cursor].square.x = x;
-        moves[cursor].square.y = y;
-        moves[cursor].piece = chessboard[_x][_y];
+        moves[cursor].loc.x = x;
+        moves[cursor].loc.y = y;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
-        if (chessboard[x][y] != EmptySquare) { break; }
+        if (!compare_pieces(board[x][y], EmptySquare)) { break; }
     }
 
     return cursor - cursor_pos;
 }
 
-int
-black_piece(enum Piece board[8][8], int _x, int _y)
-{
-    if (board[_x][_y] >= BlackPawn 
-        && board[_x][_y] <= BlackKing)
-    {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
 void
-clear_board(enum Piece board[8][8])
+clear_board(piece_t board[8][8])
 {
     // clear center
     for (int x = 0; x < 8; x++) {
@@ -85,39 +71,45 @@ clear_board(enum Piece board[8][8])
 
     // place pawns
     for (int x = 0; x < 8; x++) {
-        board[x][1] = WhitePawn;
-        board[x][6] = BlackPawn;
+        board[x][1] = PIECE(Pawn, White);
+        board[x][6] = PIECE(Pawn, Black);
     }
 
     // place knights
-    board[B][7] = BlackKnight;
-    board[G][7] = BlackKnight;
-    board[B][0] = WhiteKnight;
-    board[G][0] = WhiteKnight;
+    board[B][7] = PIECE(Knight, Black);
+    board[G][7] = PIECE(Knight, Black);
+    board[B][0] = PIECE(Knight, White);
+    board[G][0] = PIECE(Knight, White);
 
     // place bishopts
-    board[C][7] = BlackBishop;
-    board[F][7] = BlackBishop;
-    board[C][0] = WhiteBishop;
-    board[F][0] = WhiteBishop;
+    board[C][7] = PIECE(Bishop, Black);
+    board[F][7] = PIECE(Bishop, Black);
+    board[C][0] = PIECE(Bishop, White);
+    board[F][0] = PIECE(Bishop, White);
 
     // place Rooks
-    board[A][7] = BlackRook;
-    board[H][7] = BlackRook;
-    board[A][0] = WhiteRook;
-    board[H][0] = WhiteRook;
+    board[A][7] = PIECE(Rook, Black);
+    board[H][7] = PIECE(Rook, Black);
+    board[A][0] = PIECE(Rook, White);
+    board[H][0] = PIECE(Rook, White);
 
     // place Queens
-    board[D][7] = BlackQueen;
-    board[D][0] = WhiteQueen;
+    board[D][7] = PIECE(Queen, Black);
+    board[D][0] = PIECE(Queen, White);
 
     // place King
-    board[E][7] = BlackKing;
-    board[E][0] = WhiteKing;
+    board[E][7] = PIECE(King, Black);
+    board[E][0] = PIECE(King, White);
 }
 
 int
-file_to_num(char _x)
+compare_pieces(piece_t left, piece_t right)
+{
+    return left.piece == right.piece && left.color == right.color;
+}
+
+int
+file_idx(char _x)
 {
     switch (_x) {
     case 'a':
@@ -151,75 +143,75 @@ file_to_num(char _x)
 }
 
 int
-king_moves(int _x, int _y, int cursor_pos)
+king_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y,
+        int cursor_pos)
 {
     int cursor = cursor_pos;
     for (int x = _x - 1; x < _x + 1; x++) {
         if (x < 8 && x >= 0) {
             if ((_y + 1) < 8) {
-                moves[cursor].square.x = x;
-                moves[cursor].square.y = _y + 1;
-                moves[cursor].piece = chessboard[_x][_y];
+                moves[cursor].loc.x = x;
+                moves[cursor].loc.y = _y + 1;
+                moves[cursor].piece = board[_x][_y];
                 cursor++;
             }
             
             if ((_y - 1) >= 0) {
-                moves[cursor].square.x = x;
-                moves[cursor].square.y = _y - 1;
-                moves[cursor].piece = chessboard[_x][_y];
+                moves[cursor].loc.x = x;
+                moves[cursor].loc.y = _y - 1;
+                moves[cursor].piece = board[_x][_y];
                 cursor++;
             }
 
             if (_y >= 0 && _y < 8 && x != _x) {
-                moves[cursor].square.x = x;
-                moves[cursor].square.y = _y;
-                moves[cursor].piece = chessboard[_x][_y];
+                moves[cursor].loc.x = x;
+                moves[cursor].loc.y = _y;
+                moves[cursor].piece = board[_x][_y];
                 cursor++;
             }
         }
     }
 
     // check for castling
-    if (_y == 7 
-        && _x == E 
-        && chessboard[_x][_y] == BlackKing
-        && can_castle) 
+    if (_y == 7
+        && _x == E
+        && compare_pieces(board[_x][_y], PIECE(King, Black)))
     {
         // black
-        if (chessboard[F][7] == EmptySquare 
-            && chessboard[G][7] == EmptySquare) 
+        if (compare_pieces(board[F][7], EmptySquare)
+            && compare_pieces(board[G][7], EmptySquare))
         {
-            moves[cursor].square.x = CastleKingSide;
-            moves[cursor].square.y = CastleKingSide;
-            moves[cursor].piece = chessboard[_x][_y];
+            moves[cursor].loc.x = CastleKingSide;
+            moves[cursor].loc.y = CastleKingSide;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
-        } else if (chessboard[C][7] == EmptySquare
-            && chessboard[D][7] == EmptySquare)
+        } else if (compare_pieces(board[C][7], EmptySquare)
+            && compare_pieces(board[D][7], EmptySquare))
         {
-            moves[cursor].square.x = CastleQueenSide;
-            moves[cursor].square.y = CastleQueenSide;
-            moves[cursor].piece = chessboard[_x][_y];
+            moves[cursor].loc.x = CastleQueenSide;
+            moves[cursor].loc.y = CastleQueenSide;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
     } else if (_y == 0
-        && _x == E 
-        && chessboard[_x][_y] == WhiteKing
-        && can_castle)
+        && _x == E
+        && compare_pieces(board[_x][_y], PIECE(King, White)))
     {
         // white
-        if (chessboard[F][0] == EmptySquare
-            && chessboard[G][0] == EmptySquare)
+        if (compare_pieces(board[F][0], EmptySquare)
+            && compare_pieces(board[G][0], EmptySquare))
         {
-            moves[cursor].square.x = CastleKingSide;
-            moves[cursor].square.y = CastleKingSide;
-            moves[cursor].piece = chessboard[_x][_y];
+            moves[cursor].loc.x = CastleKingSide;
+            moves[cursor].loc.y = CastleKingSide;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
-        } else if (chessboard[C][0] == EmptySquare
-            && chessboard[D][0] == EmptySquare)
+        } else if (compare_pieces(board[C][0], EmptySquare)
+            && compare_pieces(board[D][0], EmptySquare))
         {
-            moves[cursor].square.x = CastleQueenSide;
-            moves[cursor].square.y = CastleQueenSide;
-            moves[cursor].piece = chessboard[_x][_y];
+            moves[cursor].loc.x = CastleQueenSide;
+            moves[cursor].loc.y = CastleQueenSide;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
     }
@@ -228,145 +220,173 @@ king_moves(int _x, int _y, int cursor_pos)
 }
 
 int
-knight_move(int _x, int _y)
+knight_move(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y)
 {
     int cursor = 0;
     // up, left
     if ((_x - 1) >= 0 && (_y + 2) < 8) {
-        moves[cursor].square.x = _x - 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x - 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     } else if ((_x - 2) >= 0 && (_y + 1) < 8) {
-        moves[cursor].square.x = _x - 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x - 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     }
 
     // up, right
     if ((_x + 1) < 8 && (_y + 2) < 8) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     } else if ((_x + 2) < 8 && (_y + 1) < 8) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     }
 
     // down, left
     if ((_x - 1) >= 0 && (_y - 2) >= 0) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     } else if ((_x - 2) >= 0 && (_y - 1) >= 0) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     }
 
     // down, right
     if ((_x + 1) < 8 && (_y - 2) >= 0) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     } else if ((_x + 2) < 8 && (_y - 1) >= 0) {
-        moves[cursor].square.x = _x + 1;
-        moves[cursor].square.y = _y + 1;
+        moves[cursor].loc.x = _x + 1;
+        moves[cursor].loc.y = _y + 1;
+        moves[cursor].piece = board[_x][_y];
         cursor++;
     }
 
     return cursor;
-}
-
-char
-num_to_file(int num)
-{
-    switch (num) {
-    case A:
-        return 'a';
-    case B:
-        return 'b';
-    case C:
-        return 'c';
-    case D:
-        return 'd';
-    case E:
-        return 'e';
-    case F:
-        return 'f';
-    case G:
-        return 'g';
-    case H:
-        return 'h';
-
-    default:
-        return '?';
-    }
 }
 
 int
-pawn_moves(int _x, int _y)
+pawn_moves(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y)
 {
-    int cursor = 0;
-    if (chessboard[_x][_y] == BlackPawn) {
+    uint8_t cursor = 0;
+    // TODO: en passant
+    if (compare_pieces(board[_x][_y], PIECE(Pawn, Black))) {
         // black
-        if (chessboard[_x][_y - 1] == EmptySquare
-            && (_y - 1) >= 0) {
-            moves[cursor].square.x = _x;
-            moves[cursor].square.y = _y - 1;
+        if (compare_pieces(board[_x][_y - 1], EmptySquare)
+            && (_y - 1) >= 0)
+        {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y - 1;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
         // can move two spaces
-        if (chessboard[_x][_y - 2] == EmptySquare && _y == 6) {
-            moves[cursor].square.x = _x;
-            moves[cursor].square.y = _y - 2;
+        if (compare_pieces(board[_x][_y - 2], EmptySquare) && _y == 6) {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y - 2;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
-    } else if (chessboard[_x][_y] == WhitePawn) {
+        // can take
+        if ((_x - 1) >= 0 && (_y - 1) >= 0
+                && !compare_pieces(board[_x - 1][_y - 1], EmptySquare))
+        {
+            moves[cursor].loc.x = _x - 1;
+            moves[cursor].loc.y = _y - 1;
+            moves[cursor].piece = board[_x][_y];
+            cursor++;
+        }
+        if ((_x + 1) < 8 && (_y - 1) >= 0
+                && !compare_pieces(board[_x + 1][_y - 1], EmptySquare))
+        {
+            moves[cursor].loc.x = _x + 1;
+            moves[cursor].loc.y = _y - 1;
+            moves[cursor].piece = board[_x][_y];
+            cursor++;
+        }
+    } else if (compare_pieces(board[_x][_y], PIECE(Pawn, White))) {
         // white
-        if (chessboard[_x][_y + 1] == EmptySquare && (_y + 1) < 8) {
-            moves[cursor].square.x = _x;
-            moves[cursor].square.y = _y + 1;
+        if (compare_pieces(board[_x][_y + 1], EmptySquare) && (_y + 1) < 8) {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y + 1;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
         // can move two spaces
-        if (chessboard[_x][_y + 2] == EmptySquare && _y == 1) {
-            moves[cursor].square.x = _x;
-            moves[cursor].square.y = _y + 2;
+        if (compare_pieces(board[_x][_y + 2], EmptySquare) && _y == 1) {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y + 2;
+            moves[cursor].piece = board[_x][_y];
+            cursor++;
+        }
+        // can take
+        if ((_x - 1) >= 0 && (_y + 1) < 8
+                && !compare_pieces(board[_x - 1][_y + 1], EmptySquare))
+        {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y;
+            moves[cursor].piece = board[_x][_y];
+            cursor++;
+        }
+        if ((_x + 1) < 8 && (_y + 1) < 8
+                && !compare_pieces(board[_x + 1][_y + 1], EmptySquare))
+        {
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = _y;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
     }
 
     return cursor;
+}
+
+piece_t
+piece(piece_t board[8][8], loc_t loc)
+{
+    return board[loc.x][loc.y];
 }
 
 void
-position(char* position, int _x, int _y) {
-    position[0] = num_to_file(_x);
-    char y[2];
-    sprintf(y, "%1d", _y);
-    position[1] = y[0];
+pos_to_str(char position[3], uint8_t _x, uint8_t _y) {
+    position[0] = _x + 'a';
+    position[1] = _y + '1';
+    position[2] = '\0';
 }
 
 int
-queen_moves(int _x, int _y)
+queen_moves(piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y)
 {
-    int cursor = 0;
-    cursor = bishop_moves(_x, _y, cursor);
-    cursor = rook_moves(_x, _y, cursor);
-
+    int cursor = bishop_moves(board, moves, _x, _y, 0);
+    cursor += rook_moves(board, moves, _x, _y, cursor);
     return cursor;
 }
 
 int
-rook_moves(int _x, int _y, int cursor_pos)
+rook_moves(
+        piece_t board[8][8], mov_t moves[64], uint8_t _x, uint8_t _y,
+        int cursor_pos)
 {
     // rank
     int cursor = cursor_pos;
     for (int x = 0; x < 8; x++) {
         if (x != _x) {
-            moves[cursor].square.x = x;
-            moves[cursor].square.y = _y;
+            moves[cursor].loc.x = x;
+            moves[cursor].loc.y = _y;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
     }
@@ -374,24 +394,12 @@ rook_moves(int _x, int _y, int cursor_pos)
     // file
     for (int y = 0; y < 8; y++) {
         if (y != _y) {
-            moves[cursor].square.x = _x;
-            moves[cursor].square.y = y;
+            moves[cursor].loc.x = _x;
+            moves[cursor].loc.y = y;
+            moves[cursor].piece = board[_x][_y];
             cursor++;
         }
     }
 
     return cursor - cursor_pos;
 }
-
-int 
-white_piece(enum Piece board[8][8], int _x, int _y)
-{
-    if (board[_x][_y] >= WhitePawn
-        && board[_x][_y] <= WhiteKing)
-    {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
