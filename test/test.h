@@ -30,6 +30,7 @@ int t_assert_string_strict(int* err, const char* str, const char* k,
 int test_clear_board();
 int test_pawn_movement_clear_board();
 int test_pawn_taking_moves();
+int test_struct_size();
 
 // test playlist
 static const int (*tests[])(void) = {

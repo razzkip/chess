@@ -25,8 +25,8 @@ typedef struct {
 } piece_t;
 
 typedef struct {
-    uint8_t x : 4;
-    uint8_t y : 4;
+    char x;
+    char y;
 } loc_t;
 
 typedef struct {
